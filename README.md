@@ -1,8 +1,9 @@
 # Tara — Software Project Management
 
 A self-hosted project management web app for running **locally inside the company**.
-Plain HTML/CSS/JS frontend (Tailwind) · Node.js + Express backend · MySQL database ·
-optional local **GitLab** integration · optional automation through the local **Claude** CLI.
+Plain HTML/CSS/JS frontend (Tailwind) · Node.js + Express backend · **SQLite by default
+(zero setup), MySQL optional** · optional local **GitLab** integration · optional
+automation through the local **Claude** CLI.
 
 ## Features
 
@@ -35,19 +36,30 @@ project-management-tara/
 
 ## Prerequisites
 
-- **Node.js 18+**
-- **MySQL 8+** running locally (or reachable on the LAN)
+- **Node.js 20+** (uses the built-in `node:sqlite` module — no native build step)
+- *(optional)* **MySQL 8+** — only if you switch `DB_DRIVER=mysql`
 - *(optional)* **Claude CLI** installed and logged in, on PATH — for the AI features
 - *(optional)* A **GitLab** personal access token (`api` scope) — for the GitLab tab
 
-## Setup
+## Setup (default: zero-config SQLite)
 
 ```bash
 cd server
 npm install
-cp .env.example .env          # then edit .env (DB password, GitLab token, etc.)
-npm run init-db               # creates the DB, tables, and a default admin user
 npm start                     # starts on http://localhost:4000
+```
+
+That's it. On first start the app creates a local `data.db` file (SQLite) and seeds the
+admin user automatically — no database server to install. To reset everything, stop the
+server and delete `data.db`.
+
+### Optional: use MySQL instead
+
+```bash
+cd server
+cp .env.example .env          # set DB_DRIVER=mysql and the DB_* credentials
+npm run init-db               # creates the schema + admin user in MySQL
+npm start
 ```
 
 Open **http://localhost:4000** and sign in with:

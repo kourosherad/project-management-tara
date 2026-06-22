@@ -49,7 +49,10 @@ router.post('/users', requireAuth, requireAdmin, async (req, res) => {
     );
     res.status(201).json({ id: result.insertId });
   } catch (e) {
-    if (e.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'Username already exists' });
+    // MySQL -> ER_DUP_ENTRY ; SQLite -> "UNIQUE constraint failed"
+    if (e.code === 'ER_DUP_ENTRY' || /UNIQUE constraint/i.test(e.message)) {
+      return res.status(409).json({ error: 'Username already exists' });
+    }
     throw e;
   }
 });

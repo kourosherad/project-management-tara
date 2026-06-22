@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 dotenv.config();
 
+import { ensureReady } from './db.js';
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
 import documentRoutes from './routes/documents.js';
@@ -48,6 +49,15 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = Number(process.env.PORT || 4000);
-app.listen(PORT, () => {
-  console.log(`Tara PM server running on http://localhost:${PORT}`);
-});
+
+// Ensure the database schema exists (and admin is seeded) before accepting traffic.
+ensureReady()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Tara PM server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to initialize database:', err.message);
+    process.exit(1);
+  });
