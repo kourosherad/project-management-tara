@@ -1,101 +1,47 @@
-# Tara — Software Project Management
+# Tara — Project Management
 
-A self-hosted project management web app for running **locally inside the company**.
-Plain HTML/CSS/JS frontend (Tailwind) · Node.js + Express backend · **SQLite by default
-(zero setup), MySQL optional** · optional local **GitLab** integration · optional
-automation through the local **Claude** CLI.
+A personal and small-team project tracker built with plain HTML/CSS/JavaScript, Express and SQLite. Features include projects, timeline tasks, named assignees, team roles, documents, quality checks, task-derived progress and administrator-managed accounts.
 
-## Features
+## Quick start
 
-| # | Feature | Where |
-|---|---------|-------|
-| 1 | Define different kinds of software projects (web/mobile/desktop/api/data) | Dashboard → New Project |
-| 2 | Attach documents to a project (spec/design/contract/report) | Project → Documents |
-| 3 | Integrate with the local GitLab (repo, commits, pipelines, issues) | Project → GitLab |
-| 4 | Status + progress bar per project (auto-derived from tasks) | Dashboard & Overview |
-| 5 | Assign roles, responsibilities & reporting lines | Project → Team & Roles |
-| 6 | Quality management plan / checklist (AI-assisted) | Project → Quality |
-| 7 | AI-generated phased timeline (planning→execution→testing→delivery) | Project → Timeline → ✨ |
-| 8 | AI resource requirement analysis (human/material/technology) | Project → AI Assistant |
+Use **Node.js 22.x** (required for built-in `node:sqlite`). From the repository root:
 
-Plus: username/password login, role-based admin, free-form "Ask Claude about this project".
-
-## Project layout
-
-```
-project-management-tara/
-├── server/            Express API + MySQL + Claude/GitLab services
-│   ├── routes/        auth, projects, documents, members, tasks, quality, gitlab, ai
-│   ├── services/      claude.js (local CLI), gitlab.js (REST v4)
-│   ├── middleware/    auth.js (JWT cookie sessions)
-│   ├── schema.sql     database schema
-│   └── scripts/init-db.js
-├── public/            Frontend (index.html, js/, css/)
-└── uploads/           Attached documents (git-ignored)
-```
-
-## Prerequisites
-
-- **Node.js 20+** (uses the built-in `node:sqlite` module — no native build step)
-- *(optional)* **MySQL 8+** — only if you switch `DB_DRIVER=mysql`
-- *(optional)* **Claude CLI** installed and logged in, on PATH — for the AI features
-- *(optional)* A **GitLab** personal access token (`api` scope) — for the GitLab tab
-
-## Setup (default: zero-config SQLite)
-
-```bash
-cd server
-npm install
-npm start                     # starts on http://localhost:4000
-```
-
-That's it. On first start the app creates a local `data.db` file (SQLite) and seeds the
-admin user automatically — no database server to install. To reset everything, stop the
-server and delete `data.db`.
-
-### Optional: use MySQL instead
-
-```bash
-cd server
-cp .env.example .env          # set DB_DRIVER=mysql and the DB_* credentials
-npm run init-db               # creates the schema + admin user in MySQL
+```sh
+npm ci
 npm start
 ```
 
-Open **http://localhost:4000** and sign in with:
+Open http://localhost:4000. Local defaults are `admin` / `admin123`; change the password in Account. Copy `server/.env.example` to `server/.env` to configure secrets, initial credentials, storage or optional integrations. Configuration works whether you start from the root or from `server/`.
 
+Local data lives in `data.db` and `uploads/`. MySQL is no longer required or supported; existing MySQL data is not migrated by this update.
+
+## Vercel trial
+
+The root configuration deploys an Express app with a **separate demo workspace in each browser**. Set `JWT_SECRET` and `ADMIN_PASSWORD` in Vercel before deploying. Use the repository root and Node.js 22.x. See [deployment instructions](docs/DEPLOYMENT.md).
+
+The first admin login is verified by the server, then demo projects, accounts and files are saved in IndexedDB in your browser. Refreshing preserves them; clearing site data removes them. Different browsers do not share data. All accounts within a workspace can access every project. Use sample data only; reliable shared work needs persistent server storage and project permissions. The app displays this limitation before and after login. Demo uploads are limited to 3 MB. GitLab and Claude are disabled in the browser demo.
+
+## Using Tara
+
+Read the [complete personal and small-team guide](docs/USER_GUIDE.md) for initial setup, access, task assignment, priorities, progress reviews, collaboration practices and a sample task table. Role descriptions are separate from login accounts; they do not enforce project access.
+
+## Development
+
+```sh
+npm run dev
+npm run build
+npm test
 ```
-username: admin
-password: admin123      # change it from the ⚙ Account menu after first login
-```
 
-### Configuration (`server/.env`)
+The build validates JavaScript syntax; the frontend is served directly from `public/`. Tests cover cold-start initialization, login, admin permissions, CRUD, progress, uploads and limits, disabled integrations, error handling, deployment configuration, browser persistence and isolation.
 
-| Key | Purpose |
-|-----|---------|
-| `PORT` | Server port (default 4000) |
-| `JWT_SECRET` | Secret for signing login sessions — set a long random value |
-| `DB_*` | MySQL host/port/user/password/name |
-| `GITLAB_URL` | Base URL of your in-company GitLab, e.g. `http://172.30.207.51` |
-| `GITLAB_TOKEN` | Personal access token with `api` scope (leave blank to disable GitLab) |
-| `CLAUDE_CLI` | Command to run Claude (default `claude`; on Windows may be a full `.cmd` path) |
-| `CLAUDE_MODEL` | Optional model override |
+- `app.js`: Vercel entry point
+- `server/app.js`: Express app shared by local and hosted entry points
+- `server/index.js`: local listener
+- `server/config.js`: environment and storage configuration
+- `server/db.js`, `server/schema.sqlite.sql`: SQLite persistence and initialization
+- `public/`: browser frontend
+- `tests/`: API and configuration tests
+- `docs/`: usage and deployment guides
 
-The **GitLab** and **Claude AI** tabs/buttons appear automatically only when those are
-configured and reachable — the app works fully without them.
-
-## How the integrations work
-
-- **GitLab**: the backend calls the GitLab REST API v4 with your token. Link a Tara
-  project to a GitLab project by its numeric ID (use the *Browse* picker). The GitLab
-  tab then shows live repo info, recent commits, CI pipelines, and open issues.
-- **Claude**: the backend spawns the local `claude -p "<prompt>"` CLI. No API key and no
-  internet needed — it reuses your existing CLI login. Used to generate timelines,
-  quality checklists, resource plans, and answer project questions.
-
-## Notes
-
-- Progress bars are computed automatically from task completion (`done / total`).
-- Documents are stored on disk under `uploads/` with metadata in MySQL.
-- This app is intended for a **trusted internal LAN**. If you expose it more widely,
-  put it behind HTTPS and a reverse proxy, and rotate `JWT_SECRET`.
+GitLab requires `GITLAB_URL` and `GITLAB_TOKEN`. Local Claude requires `CLAUDE_ENABLED=true` and an installed, authenticated CLI; its availability and network needs depend on your Claude configuration.

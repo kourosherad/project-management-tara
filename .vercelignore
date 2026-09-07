@@ -1,0 +1,11 @@
+.git
+.claude
+.env*
+server/.env*
+*.db*
+uploads
+server/%LOCALAPPDATA%
+**/*.log
+tests
+docs
+demo-credentials.txt

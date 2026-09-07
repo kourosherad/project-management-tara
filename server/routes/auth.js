@@ -2,6 +2,7 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import { q } from '../db.js';
 import { signToken, requireAuth, requireAdmin } from '../middleware/auth.js';
+import { onVercel } from '../config.js';
 
 const router = express.Router();
 
@@ -17,13 +18,14 @@ router.post('/login', async (req, res) => {
   res.cookie('token', token, {
     httpOnly: true,
     sameSite: 'lax',
+    secure: onVercel,
     maxAge: 7 * 24 * 3600 * 1000,
   });
   res.json({ token, user: { id: user.id, username: user.username, full_name: user.full_name, is_admin: !!user.is_admin } });
 });
 
 router.post('/logout', (req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', { httpOnly: true, sameSite: 'lax', secure: onVercel });
   res.json({ ok: true });
 });
 
@@ -49,8 +51,7 @@ router.post('/users', requireAuth, requireAdmin, async (req, res) => {
     );
     res.status(201).json({ id: result.insertId });
   } catch (e) {
-    // MySQL -> ER_DUP_ENTRY ; SQLite -> "UNIQUE constraint failed"
-    if (e.code === 'ER_DUP_ENTRY' || /UNIQUE constraint/i.test(e.message)) {
+    if (/UNIQUE constraint/i.test(e.message)) {
       return res.status(409).json({ error: 'Username already exists' });
     }
     throw e;

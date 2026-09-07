@@ -1,6 +1,7 @@
 // Thin fetch wrapper. All requests send the session cookie (credentials).
 const API = (() => {
-  async function req(method, url, body, isForm = false) {
+  let demo = false;
+  async function network(method, url, body, isForm = false) {
     const opts = { method, credentials: 'include', headers: {} };
     if (body && !isForm) {
       opts.headers['Content-Type'] = 'application/json';
@@ -20,7 +21,13 @@ const API = (() => {
     }
     return data;
   }
+  function req(method, url, body, isForm = false) {
+    if (demo && url !== '/health') return TaraDemo.request(method, url, body, network);
+    return network(method, url, body, isForm);
+  }
   return {
+    enableDemo: () => { demo = true; },
+    download: (id) => demo ? TaraDemo.download(id) : Promise.resolve(window.open('/api/documents/' + id + '/download', '_blank')),
     get:  (u) => req('GET', u),
     post: (u, b) => req('POST', u, b),
     put:  (u, b) => req('PUT', u, b),

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import { jwtSecret } from '../config.js';
 
-const SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+const SECRET = jwtSecret;
 
 export function signToken(user) {
   return jwt.sign(

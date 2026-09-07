@@ -1,6 +1,5 @@
 // Creates the schema (tables) and seeds an admin user for the configured driver.
 //   SQLite (default): also happens automatically on `npm start`.
-//   MySQL: run this once after creating the database / setting credentials in .env.
 // Usage:  npm run init-db
 import { ensureReady, driver } from '../db.js';
 

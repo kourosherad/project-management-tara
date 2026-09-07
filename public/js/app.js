@@ -2,6 +2,7 @@
 const App = (() => {
   let me = null;
   let caps = { gitlab: false, ai: false };
+  let maxUploadBytes = 3 * 1024 * 1024;
 
   const STATUS_COLORS = {
     planning: 'bg-slate-200 text-slate-700',
@@ -24,6 +25,17 @@ const App = (() => {
   // ---------- bootstrap ----------
   async function init() {
     try {
+      const health = await API.get('/health');
+      $('demoNotice').classList.toggle('hidden', !health.demo);
+      if (health.demo) API.enableDemo();
+      maxUploadBytes = health.maxUploadBytes;
+    } catch {
+      showLogin();
+      $('loginError').textContent = 'Tara could not connect to the server. Refresh to try again.';
+      $('loginError').classList.remove('hidden');
+      return;
+    }
+    try {
       const { user } = await API.get('/auth/me');
       me = user;
       await onAuthed();
@@ -44,7 +56,7 @@ const App = (() => {
     // detect capabilities (GitLab + Claude) without blocking the UI
     API.get('/gitlab/status').then((s) => { caps.gitlab = s.configured; if (s.configured) $('gitlabBadge').classList.remove('hidden'); }).catch(() => {});
     API.get('/ai/status').then((s) => { caps.ai = s.available; if (s.available) $('aiBadge').classList.remove('hidden'); }).catch(() => {});
-    goHome();
+    await goHome();
   }
 
   // ---------- auth actions ----------
@@ -355,7 +367,7 @@ const App = (() => {
           <div><label class="block font-medium mb-1">Start</label><input type="date" name="start_date" value="${t.start_date || ''}" class="w-full rounded-lg border border-slate-300 px-3 py-2" /></div>
           <div><label class="block font-medium mb-1">End</label><input type="date" name="end_date" value="${t.end_date || ''}" class="w-full rounded-lg border border-slate-300 px-3 py-2" /></div>
         </div>
-        <div><label class="block font-medium mb-1">Responsible team</label><input name="responsible_team" value="${UI.esc(t.responsible_team || '')}" class="w-full rounded-lg border border-slate-300 px-3 py-2" /></div>
+        <div><label class="block font-medium mb-1">Assignee / team</label><input name="responsible_team" placeholder="One accountable person, e.g. Kourosh" value="${UI.esc(t.responsible_team || '')}" class="w-full rounded-lg border border-slate-300 px-3 py-2" /></div>
         <div class="flex justify-end"><button class="px-4 py-2 rounded-lg bg-brand text-white font-semibold">Save</button></div>
       </form>`);
     $('taskForm').onsubmit = async (e) => {
@@ -458,7 +470,7 @@ const App = (() => {
               <div class="text-xs text-slate-400">${UI.esc(d.category)} · ${fmtBytes(d.size_bytes)} · ${d.created_at?.slice(0, 10) || ''}</div>
             </div>
             <div class="shrink-0 flex gap-3">
-              <a href="/api/documents/${d.id}/download" class="text-brand hover:underline">Download</a>
+              <button onclick="App.downloadDoc(${d.id})" class="text-brand hover:underline">Download</button>
               <button onclick="App.deleteDoc(${d.id})" class="text-red-500 hover:underline">Delete</button>
             </div>
           </div>`).join('') : `<div class="text-center text-slate-400 py-8 text-sm">No documents attached.</div>`}
@@ -468,6 +480,7 @@ const App = (() => {
     const m = UI.modal('Upload Document', `
       <form id="docForm" class="space-y-3 text-sm">
         <div><label class="block font-medium mb-1">File *</label><input type="file" name="file" required class="w-full text-sm" /></div>
+        <p class="text-xs text-slate-500">Maximum file size: ${maxUploadBytes / 1024 / 1024} MB.</p>
         <div><label class="block font-medium mb-1">Category</label>
           <select name="category" class="w-full rounded-lg border border-slate-300 px-3 py-2">
             <option value="general">General</option><option value="spec">Specification</option>
@@ -478,12 +491,19 @@ const App = (() => {
     $('docForm').onsubmit = async (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
+      if (fd.get('file').size > maxUploadBytes) {
+        $('docStatus').textContent = `File too large. Maximum size is ${maxUploadBytes / 1024 / 1024} MB.`;
+        return;
+      }
       $('docStatus').innerHTML = `<div class="flex items-center gap-2 text-slate-500"><div class="spinner"></div> Uploading…</div>`;
       try {
         await API.upload('/documents/project/' + current.id, fd);
         m.close(); UI.toast('Uploaded', 'success'); reload();
       } catch (err) { $('docStatus').innerHTML = `<div class="text-red-600">${UI.esc(err.message)}</div>`; }
     };
+  }
+  async function downloadDoc(id) {
+    try { await API.download(id); } catch (error) { UI.toast(error.message, 'error'); }
   }
   async function deleteDoc(id) { if (!(await UI.confirm('Delete this document?'))) return; await API.del('/documents/' + id); reload(); }
 
@@ -667,7 +687,7 @@ const App = (() => {
   return {
     init, login, logout, goHome, newProject, editProject, deleteProject, openProject,
     setTab, pickGitlab, _setGitlab: null,
-    taskForm, deleteTask, aiTimeline, memberForm, deleteMember,
+    taskForm, deleteTask, aiTimeline, memberForm, deleteMember, downloadDoc,
     uploadDoc, deleteDoc, qualityForm, deleteQuality, aiQuality,
     aiResources, aiAsk, openAccount, newUser,
   };

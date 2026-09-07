@@ -1,0 +1,21 @@
+{
+  "name": "tara-project-management",
+  "version": "1.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "workspaces": [
+    "server"
+  ],
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "build": "node scripts/check.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5"
+  }
+}

@@ -2,22 +2,22 @@ import express from 'express';
 import multer from 'multer';
 import path from 'node:path';
 import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
+import { uploadDir, maxUploadBytes } from '../config.js';
 import { q } from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads');
+const UPLOAD_DIR = uploadDir;
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => {
     const safe = file.originalname.replace(/[^\w.\-]+/g, '_');
-    cb(null, `${Date.now()}_${safe}`);
+    cb(null, `${randomUUID()}_${safe}`);
   },
 });
-const upload = multer({ storage, limits: { fileSize: 50 * 1024 * 1024 } }); // 50MB
+const upload = multer({ storage, limits: { fileSize: maxUploadBytes, files: 1, fields: 5 } });
 
 const router = express.Router();
 router.use(requireAuth);

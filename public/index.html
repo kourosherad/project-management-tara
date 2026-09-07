@@ -13,6 +13,9 @@
   <link rel="stylesheet" href="/css/styles.css" />
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen">
+  <div id="demoNotice" role="status" class="hidden bg-amber-100 text-amber-950 px-4 py-3 text-sm text-center">
+    Temporary demo: projects, accounts and files stay in this browser. Other browsers have separate workspaces. Clearing site data removes your demo. Use sample data only.
+  </div>
 
   <!-- ================= LOGIN ================= -->
   <div id="loginView" class="hidden min-h-screen flex items-center justify-center p-4">
@@ -31,7 +34,7 @@
       </div>
       <p id="loginError" class="text-sm text-red-600 hidden"></p>
       <button class="w-full bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg py-2.5 transition">Sign in</button>
-      <p class="text-xs text-center text-slate-400">Default: admin / admin123</p>
+      <p class="text-xs text-center text-slate-500">Use the account supplied by your Tara administrator.</p>
     </form>
   </div>
 
@@ -56,6 +59,7 @@
   <!-- Modal host -->
   <div id="modalRoot"></div>
 
+  <script src="/js/demo.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/app.js"></script>

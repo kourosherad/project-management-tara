@@ -1,6 +1,7 @@
 // Talks to the local Claude Code CLI by spawning it as a child process.
 // Stays fully offline/local — no API key required, uses your existing CLI login.
 import { spawn } from 'node:child_process';
+import { onVercel } from '../config.js';
 
 const CLI = process.env.CLAUDE_CLI || 'claude';
 const MODEL = process.env.CLAUDE_MODEL || '';
@@ -14,6 +15,9 @@ const MODEL = process.env.CLAUDE_MODEL || '';
  * @returns {Promise<string>}
  */
 export function runClaude(prompt, opts = {}) {
+  if (onVercel || process.env.CLAUDE_ENABLED !== 'true') {
+    return Promise.reject(Object.assign(new Error('Local Claude integration is disabled.'), { status: 503 }));
+  }
   const timeoutMs = opts.timeoutMs ?? 120000;
   const args = ['-p', prompt];
   if (MODEL) args.push('--model', MODEL);
