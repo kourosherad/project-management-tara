@@ -25,11 +25,16 @@ export function ensureReady() {
 }
 async function initialize() {
   db.exec(fs.readFileSync(new URL('./schema.sqlite.sql', import.meta.url), 'utf8'));
+  const columns = db.prepare("PRAGMA table_info(users)").all();
+  if (!columns.some((column) => column.name === 'role')) {
+    db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'viewer'");
+  }
+  db.exec("UPDATE users SET role = 'admin' WHERE is_admin = 1");
   const rows = await q('SELECT COUNT(*) AS c FROM users');
   if (Number(rows[0].c) === 0) {
     const hash = await bcrypt.hash(adminPassword, 10);
     await q(
-      'INSERT OR IGNORE INTO users (username, full_name, password_hash, is_admin) VALUES (?,?,?,1)',
+      "INSERT OR IGNORE INTO users (username, full_name, password_hash, is_admin, role) VALUES (?,?,?,1,'admin')",
       [adminUsername, 'Administrator', hash]
     );
     console.log('Initialized administrator account.');

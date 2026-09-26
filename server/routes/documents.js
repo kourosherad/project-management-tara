@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { uploadDir, maxUploadBytes } from '../config.js';
 import { q } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
 
 const UPLOAD_DIR = uploadDir;
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -23,7 +23,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 // Upload a document to a project (feature 2).
-router.post('/project/:projectId', upload.single('file'), async (req, res) => {
+router.post('/project/:projectId', requirePermission('document:write'), upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'file required' });
   const { category } = req.body || {};
   const result = await q(
@@ -45,7 +45,7 @@ router.get('/:id/download', async (req, res) => {
   res.download(filePath, doc.original_name);
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('document:write'), async (req, res) => {
   const rows = await q('SELECT * FROM documents WHERE id = ?', [req.params.id]);
   const doc = rows[0];
   if (doc) {

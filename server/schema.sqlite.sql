@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   full_name     TEXT NOT NULL,
   password_hash TEXT NOT NULL,
   is_admin      INTEGER NOT NULL DEFAULT 0,
+  role          TEXT NOT NULL DEFAULT 'viewer',
   created_at    TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
