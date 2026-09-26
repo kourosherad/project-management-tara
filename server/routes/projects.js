@@ -1,6 +1,6 @@
 import express from 'express';
 import { q } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
 
 const router = express.Router();
 router.use(requireAuth);
@@ -45,7 +45,7 @@ router.get('/:id', async (req, res) => {
   res.json(project);
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('project:create'), async (req, res) => {
   const { name, description, project_type, status, start_date, due_date, gitlab_project_id } = req.body || {};
   if (!name) return res.status(400).json({ error: 'name required' });
   const result = await q(
@@ -57,7 +57,7 @@ router.post('/', async (req, res) => {
   res.status(201).json({ id: result.insertId });
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePermission('project:edit'), async (req, res) => {
   const { name, description, project_type, status, start_date, due_date, gitlab_project_id } = req.body || {};
   await q(
     `UPDATE projects SET name=?, description=?, project_type=?, status=?, start_date=?, due_date=?, gitlab_project_id=?
@@ -68,7 +68,7 @@ router.put('/:id', async (req, res) => {
   res.json({ ok: true });
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requirePermission('project:delete'), async (req, res) => {
   await q('DELETE FROM projects WHERE id = ?', [req.params.id]);
   res.json({ ok: true });
 });

@@ -20,6 +20,9 @@ const App = (() => {
 
   const $ = (id) => document.getElementById(id);
   const main = () => $('mainContent');
+  const canManageProjects = () => ['admin', 'manager'].includes(me?.role);
+  const canWriteWork = () => ['admin', 'manager', 'contributor'].includes(me?.role);
+  const canManageTeam = () => canManageProjects();
 
   // ---------- bootstrap ----------
   async function init() {
@@ -85,7 +88,7 @@ const App = (() => {
     main().innerHTML = `
       <div class="flex items-center justify-between mb-5">
         <h1 class="text-2xl font-bold">Projects</h1>
-        <button onclick="App.newProject()" class="bg-brand hover:bg-brand-dark text-white text-sm font-semibold px-4 py-2 rounded-lg">+ New Project</button>
+        ${canManageProjects() ? '<button onclick="App.newProject()" class="bg-brand hover:bg-brand-dark text-white text-sm font-semibold px-4 py-2 rounded-lg">+ New Project</button>' : ''}
       </div>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         ${statCard('Total', stats.total, 'text-slate-800')}
@@ -181,7 +184,7 @@ const App = (() => {
     };
   }
 
-  async function editProject(p) {
+  async function editProject(p = current) {
     const m = UI.modal('Edit Project', projectForm(p), { wide: true });
     $('projForm').onsubmit = async (e) => {
       e.preventDefault();
@@ -235,7 +238,7 @@ const App = (() => {
       ['documents', 'Documents'], ['quality', 'Quality'],
     ];
     if (caps.gitlab && p.gitlab_project_id) tabs.push(['gitlab', 'GitLab']);
-    if (caps.ai) tabs.push(['ai', 'AI Assistant']);
+    if (caps.ai && canManageProjects()) tabs.push(['ai', 'AI Assistant']);
 
     main().innerHTML = `
       <button onclick="App.goHome()" class="text-sm text-slate-500 hover:text-brand mb-3">← All projects</button>
@@ -254,8 +257,8 @@ const App = (() => {
             </div>
           </div>
           <div class="flex gap-2 shrink-0">
-            <button onclick='App.editProject(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-sm px-3 py-1.5 rounded-lg border border-slate-300">Edit</button>
-            <button onclick="App.deleteProject(${p.id})" class="text-sm px-3 py-1.5 rounded-lg border border-red-300 text-red-600">Delete</button>
+            ${canManageProjects() ? '<button onclick="App.editProject()" class="text-sm px-3 py-1.5 rounded-lg border border-slate-300">Edit</button>' : ''}
+            ${me.role === 'admin' ? `<button onclick="App.deleteProject(${p.id})" class="text-sm px-3 py-1.5 rounded-lg border border-red-300 text-red-600">Delete</button>` : ''}
           </div>
         </div>
         <div class="mt-4 max-w-md">${progressBar(p.progress)}</div>
@@ -309,8 +312,8 @@ const App = (() => {
       <div class="flex items-center justify-between mb-3">
         <h3 class="font-semibold">Timeline & Tasks</h3>
         <div class="flex gap-2">
-          ${caps.ai ? `<button onclick="App.aiTimeline()" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-600 text-white">✨ Generate with AI</button>` : ''}
-          <button onclick="App.taskForm()" class="text-sm px-3 py-1.5 rounded-lg bg-brand text-white">+ Task</button>
+          ${caps.ai && canManageProjects() ? `<button onclick="App.aiTimeline()" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-600 text-white">✨ Generate with AI</button>` : ''}
+          ${canWriteWork() ? '<button onclick="App.taskForm()" class="text-sm px-3 py-1.5 rounded-lg bg-brand text-white">+ Task</button>' : ''}
         </div>
       </div>
       <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
@@ -336,8 +339,8 @@ const App = (() => {
         <td class="p-3 text-slate-500">${UI.esc(t.responsible_team || '—')}</td>
         <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full ${statusColor[t.status]}">${t.status.replace('_', ' ')}</span></td>
         <td class="p-3 text-right whitespace-nowrap">
-          <button onclick='App.taskForm(${JSON.stringify(t).replace(/'/g, "&#39;")})' class="text-slate-400 hover:text-brand">✎</button>
-          <button onclick="App.deleteTask(${t.id})" class="text-slate-400 hover:text-red-600 ml-2">🗑</button>
+          ${canWriteWork() ? `<button onclick='App.taskForm(${JSON.stringify(t).replace(/'/g, "&#39;")})' class="text-slate-400 hover:text-brand">✎</button>
+          <button onclick="App.deleteTask(${t.id})" class="text-slate-400 hover:text-red-600 ml-2">🗑</button>` : ''}
         </td>
       </tr>`;
   }
@@ -396,7 +399,7 @@ const App = (() => {
     el.innerHTML = `
       <div class="flex items-center justify-between mb-3">
         <h3 class="font-semibold">Team, Roles & Reporting</h3>
-        <button onclick="App.memberForm()" class="text-sm px-3 py-1.5 rounded-lg bg-brand text-white">+ Member</button>
+        ${canManageTeam() ? '<button onclick="App.memberForm()" class="text-sm px-3 py-1.5 rounded-lg bg-brand text-white">+ Member</button>' : ''}
       </div>
       <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
         <table class="w-full text-sm">
@@ -414,8 +417,8 @@ const App = (() => {
       <td class="p-3 text-slate-500">${UI.esc(m.reports_to || '—')}</td>
       <td class="p-3 text-slate-500">${UI.esc(m.contact || '—')}</td>
       <td class="p-3 text-right whitespace-nowrap">
-        <button onclick='App.memberForm(${JSON.stringify(m).replace(/'/g, "&#39;")})' class="text-slate-400 hover:text-brand">✎</button>
-        <button onclick="App.deleteMember(${m.id})" class="text-slate-400 hover:text-red-600 ml-2">🗑</button>
+        ${canManageTeam() ? `<button onclick='App.memberForm(${JSON.stringify(m).replace(/'/g, "&#39;")})' class="text-slate-400 hover:text-brand">✎</button>
+        <button onclick="App.deleteMember(${m.id})" class="text-slate-400 hover:text-red-600 ml-2">🗑</button>` : ''}
       </td></tr>`;
   }
   function memberForm(mem = {}) {
@@ -448,7 +451,7 @@ const App = (() => {
     el.innerHTML = `
       <div class="flex items-center justify-between mb-3">
         <h3 class="font-semibold">Documents</h3>
-        <button onclick="App.uploadDoc()" class="text-sm px-3 py-1.5 rounded-lg bg-brand text-white">+ Upload</button>
+        ${canWriteWork() ? '<button onclick="App.uploadDoc()" class="text-sm px-3 py-1.5 rounded-lg bg-brand text-white">+ Upload</button>' : ''}
       </div>
       <div class="bg-white rounded-xl shadow-sm divide-y divide-slate-100">
         ${p.documents.length ? p.documents.map((d) => `
@@ -459,7 +462,7 @@ const App = (() => {
             </div>
             <div class="shrink-0 flex gap-3">
               <a href="/api/documents/${d.id}/download" class="text-brand hover:underline">Download</a>
-              <button onclick="App.deleteDoc(${d.id})" class="text-red-500 hover:underline">Delete</button>
+              ${canWriteWork() ? `<button onclick="App.deleteDoc(${d.id})" class="text-red-500 hover:underline">Delete</button>` : ''}
             </div>
           </div>`).join('') : `<div class="text-center text-slate-400 py-8 text-sm">No documents attached.</div>`}
       </div>`;
@@ -495,8 +498,8 @@ const App = (() => {
       <div class="flex items-center justify-between mb-3">
         <h3 class="font-semibold">Quality Management Plan</h3>
         <div class="flex gap-2">
-          ${caps.ai ? `<button onclick="App.aiQuality()" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-600 text-white">✨ Generate with AI</button>` : ''}
-          <button onclick="App.qualityForm()" class="text-sm px-3 py-1.5 rounded-lg bg-brand text-white">+ Criterion</button>
+          ${caps.ai && canManageProjects() ? `<button onclick="App.aiQuality()" class="text-sm px-3 py-1.5 rounded-lg bg-emerald-600 text-white">✨ Generate with AI</button>` : ''}
+          ${canWriteWork() ? '<button onclick="App.qualityForm()" class="text-sm px-3 py-1.5 rounded-lg bg-brand text-white">+ Criterion</button>' : ''}
         </div>
       </div>
       <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
@@ -510,8 +513,8 @@ const App = (() => {
               <td class="p-3"><span class="text-xs px-2 py-0.5 rounded-full ${statusColor[i.status]}">${i.status}</span></td>
               <td class="p-3 text-slate-500 max-w-xs">${UI.esc(i.notes || '—')}</td>
               <td class="p-3 text-right whitespace-nowrap">
-                <button onclick='App.qualityForm(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="text-slate-400 hover:text-brand">✎</button>
-                <button onclick="App.deleteQuality(${i.id})" class="text-slate-400 hover:text-red-600 ml-2">🗑</button>
+                ${canWriteWork() ? `<button onclick='App.qualityForm(${JSON.stringify(i).replace(/'/g, "&#39;")})' class="text-slate-400 hover:text-brand">✎</button>
+                <button onclick="App.deleteQuality(${i.id})" class="text-slate-400 hover:text-red-600 ml-2">🗑</button>` : ''}
               </td></tr>`).join('') : `<tr><td colspan="5" class="text-center text-slate-400 py-8">No quality criteria yet.</td></tr>`}
           </tbody>
         </table>
@@ -606,6 +609,8 @@ const App = (() => {
   }
 
   // ---------- Account / users ----------
+  const roleOptions = (selected) => ['admin', 'manager', 'contributor', 'viewer']
+    .map((role) => `<option value="${role}" ${selected === role ? 'selected' : ''}>${role}</option>`).join('');
   async function openAccount() {
     let usersHtml = '';
     if (me.is_admin) {
@@ -615,7 +620,8 @@ const App = (() => {
           <div class="mt-5 pt-4 border-t border-slate-200">
             <div class="flex items-center justify-between mb-2"><h4 class="font-semibold text-sm">Users</h4>
               <button onclick="App.newUser()" class="text-xs px-2 py-1 rounded bg-brand text-white">+ Add user</button></div>
-            ${users.map((u) => `<div class="text-sm py-0.5 flex justify-between"><span>${UI.esc(u.full_name)} <span class="text-slate-400">@${UI.esc(u.username)}</span></span>${u.is_admin ? '<span class="text-xs text-brand">admin</span>' : ''}</div>`).join('')}
+            <p class="text-xs text-slate-500 mb-2">Admin: all actions · Manager: manage projects and work · Contributor: update work and files · Viewer: read only</p>
+            ${users.map((u) => `<div class="text-sm py-1 flex justify-between gap-2"><span>${UI.esc(u.full_name)} <span class="text-slate-400">@${UI.esc(u.username)}</span></span><select aria-label="Role for ${UI.esc(u.username)}" onchange="App.changeUserRole(${u.id}, this)" class="rounded border border-slate-300 text-xs">${roleOptions(u.role)}</select></div>`).join('')}
           </div>`;
       } catch {}
     }
@@ -638,16 +644,27 @@ const App = (() => {
         <input name="full_name" placeholder="Full name" required class="w-full rounded-lg border border-slate-300 px-3 py-2" />
         <input name="username" placeholder="Username" required class="w-full rounded-lg border border-slate-300 px-3 py-2" />
         <input name="password" type="password" placeholder="Password" required class="w-full rounded-lg border border-slate-300 px-3 py-2" />
-        <label class="flex items-center gap-2"><input type="checkbox" name="is_admin" /> Admin</label>
+        <label class="block">Role <select name="role" class="w-full rounded-lg border border-slate-300 px-3 py-2">${roleOptions('viewer')}</select></label>
         <div class="flex justify-end"><button class="px-4 py-2 rounded-lg bg-brand text-white font-semibold">Create</button></div>
       </form>`);
     $('uForm').onsubmit = async (e) => {
       e.preventDefault();
       const data = formData(e.target);
-      data.is_admin = e.target.is_admin.checked;
-      try { await API.post('/auth/users', data); m.close(); UI.toast('User created', 'success'); }
+      try { await API.post('/auth/users', data); m.close(); UI.toast('User created', 'success'); openAccount(); }
       catch (err) { UI.toast(err.message, 'error'); }
     };
+  }
+  async function changeUserRole(id, select) {
+    const previous = select.dataset.previous || select.querySelector('option[selected]')?.value || 'viewer';
+    try {
+      await API.put('/auth/users/' + id + '/role', { role: select.value });
+      select.dataset.previous = select.value;
+      UI.toast('Role updated', 'success');
+      if (id === me.id) location.reload();
+    } catch (err) {
+      select.value = previous;
+      UI.toast(err.message, 'error');
+    }
   }
 
   // ---------- helpers ----------
@@ -669,7 +686,7 @@ const App = (() => {
     setTab, pickGitlab, _setGitlab: null,
     taskForm, deleteTask, aiTimeline, memberForm, deleteMember,
     uploadDoc, deleteDoc, qualityForm, deleteQuality, aiQuality,
-    aiResources, aiAsk, openAccount, newUser,
+    aiResources, aiAsk, openAccount, newUser, changeUserRole,
   };
 })();
 

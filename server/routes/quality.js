@@ -1,9 +1,10 @@
 import express from 'express';
 import { q } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
 
 const router = express.Router();
 router.use(requireAuth);
+router.use(requirePermission('quality:write'));
 
 // Quality management plan items (feature 6).
 router.post('/project/:projectId', async (req, res) => {

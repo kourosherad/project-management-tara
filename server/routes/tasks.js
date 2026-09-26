@@ -1,10 +1,11 @@
 import express from 'express';
 import { q } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { recomputeProgress } from './projects.js';
 
 const router = express.Router();
 router.use(requireAuth);
+router.use(requirePermission('work:write'));
 
 // Timeline tasks/phases (features 4 & 7).
 router.post('/project/:projectId', async (req, res) => {

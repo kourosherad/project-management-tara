@@ -1,9 +1,10 @@
 import express from 'express';
 import { q } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
 
 const router = express.Router();
 router.use(requireAuth);
+router.use(requirePermission('team:write'));
 
 // Roles, responsibilities & reporting lines (feature 5).
 router.post('/project/:projectId', async (req, res) => {

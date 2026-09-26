@@ -20,6 +20,21 @@ automation through the local **Claude** CLI.
 
 Plus: username/password login, role-based admin, free-form "Ask Claude about this project".
 
+## Local user roles
+
+The local admin can add users and change their roles from **Account → Users**. Role
+changes take effect on the next request, including for users who are already signed in.
+
+| Role | Permissions |
+|---|---|
+| Admin | All actions, including user roles and project deletion |
+| Manager | Create/edit projects; manage team, tasks, documents, quality, and AI actions |
+| Contributor | Manage tasks, documents, and quality items |
+| Viewer | Read projects and download documents |
+
+Roles currently apply across all projects. Project-specific access and custom permission
+sets are not yet implemented. At least one admin account must remain.
+
 ## Project layout
 
 ```
@@ -52,6 +67,11 @@ npm start                     # starts on http://localhost:4000
 That's it. On first start the app creates a local `data.db` file (SQLite) and seeds the
 admin user automatically — no database server to install. To reset everything, stop the
 server and delete `data.db`.
+
+Schema upgrades run automatically on startup. Applied versions are recorded in
+`schema_migrations`; new upgrades belong in `server/migrations.js`. Back up `data.db`
+before upgrading an existing installation. MySQL users should run `npm run init-db`
+after updating the application; the same migration runner is used there.
 
 ### Optional: use MySQL instead
 

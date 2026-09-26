@@ -1,6 +1,6 @@
 import express from 'express';
 import { q } from '../db.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requirePermission } from '../middleware/auth.js';
 import { runClaude, runClaudeJSON } from '../services/claude.js';
 
 const router = express.Router();
@@ -25,7 +25,7 @@ async function loadProject(id) {
  * Feature 7: generate a phased project timeline.
  * Claude returns task rows; we insert them and return the saved list.
  */
-router.post('/project/:id/timeline', async (req, res, next) => {
+router.post('/project/:id/timeline', requirePermission('ai:generate'), async (req, res, next) => {
   try {
     const project = await loadProject(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -67,7 +67,7 @@ Return a JSON array of 8-16 task objects with exactly those keys.`;
  * Feature 8: analyze resource requirements (human / materials / technology).
  * Returns markdown text shown in the UI (not stored).
  */
-router.post('/project/:id/resources', async (req, res, next) => {
+router.post('/project/:id/resources', requirePermission('ai:generate'), async (req, res, next) => {
   try {
     const project = await loadProject(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -92,7 +92,7 @@ Format the answer as clean Markdown with headings and tables.`;
 /**
  * Feature 6 helper: generate a quality management checklist and store the items.
  */
-router.post('/project/:id/quality', async (req, res, next) => {
+router.post('/project/:id/quality', requirePermission('ai:generate'), async (req, res, next) => {
   try {
     const project = await loadProject(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -119,7 +119,7 @@ method (how it is verified: review/test/audit). Keep each field short.`;
 });
 
 // Free-form assistant: ask anything about a project; returns markdown.
-router.post('/project/:id/ask', async (req, res, next) => {
+router.post('/project/:id/ask', requirePermission('ai:generate'), async (req, res, next) => {
   try {
     const project = await loadProject(req.params.id);
     if (!project) return res.status(404).json({ error: 'Project not found' });
